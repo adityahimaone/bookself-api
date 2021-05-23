@@ -1,65 +1,67 @@
+/* eslint-disable max-len */
 /* eslint linebreak-style: ["error", "windows"]*/
 const {nanoid} = require('nanoid');
-const books = require('./books');
+const cal = require('./cal');
 
-const addBookHandler = (request, h) => {
-  const {name,
-    year,
-    author,
-    summary,
-    publisher,
-    pageCount,
-    readPage,
-    reading} = request.payload;
+const addCalHandler = (request, h) => {
+  const {gender,
+    weight,
+    height,
+    age,
+    activityType} = request.payload;
 
   const id = nanoid(16);
-  const isFinished = (pageCount === readPage) ? true : false;
-  const insertedAt = new Date().toISOString();
-  const updatedAt = insertedAt;
+  let activityValue = null;
+  switch (activityType) {
+    case 1:
+      activityValue = 1.2;
+      break;
+    case 2:
+      activityValue = 1.375;
+      break;
+    case 3:
+      activityValue = 1.55;
+      break;
+    case 4:
+      activityValue = 1.725;
+      break;
+    case 5:
+      activityValue = 1.9;
+      break;
+    default:
+      activityValue = 0;
+      break;
+  }
 
-  if (!name) {
+  const calories = (gender === 'male') ? ((10 * weight) + (6.25 * height) - (5 * age) + 5) *
+  activityValue : ((10 * weight) + (6.25 * height) - (5 * age) - 161) * activityValue;
+
+  if (!gender) {
     const response = h.response({
       status: 'fail',
-      message: 'Gagal menambahkan buku. Mohon isi nama buku',
+      message: 'Silahkan isi gender',
     });
     response.code(400);
     return response;
   }
 
-  if (readPage > pageCount) {
-    const response = h.response({
-      status: 'fail',
-      // eslint-disable-next-line max-len
-      message: 'Gagal menambahkan buku. readPage tidak boleh lebih besar dari pageCount',
-    });
-    response.code(400);
-    return response;
-  }
-
-  const newBook = {
+  const newCal = {
     id,
-    name,
-    year,
-    author,
-    summary,
-    publisher,
-    pageCount,
-    readPage,
-    finished: isFinished,
-    reading,
-    insertedAt,
-    updatedAt,
+    gender,
+    weight,
+    height,
+    age,
+    activityType,
+    calories,
   };
-  books.push(newBook);
-
-  const isSuccess = books.filter((book) => book.id === id).length > 0;
+  cal.push(newCal);
+  console.log(newCal);
+  console.log(cal);
+  const isSuccess = cal.filter((item) => item.id === id).length > 0;
   if (isSuccess) {
     const response = h.response({
       status: 'success',
-      message: 'Buku berhasil ditambahkan',
-      data: {
-        bookId: id,
-      },
+      calories,
     });
     response.code(201);
     return response;
@@ -67,130 +69,11 @@ const addBookHandler = (request, h) => {
 
   const response = h.response({
     status: 'fail',
-    message: 'Buku gagal ditambahkan',
+    message: 'Calorie gagal ditambahkan',
   });
   response.code(500);
   return response;
 };
 
-const getAllBookdHandler = () => ({
-  status: 'success',
-  data: {
-    books: books.map((book) => ({
-      id: book.id,
-      name: book.name,
-      publisher: book.publisher,
-    })),
-  },
-});
-
-const getBookByIdHandler = (request, h) => {
-  const {id} = request.params;
-  const book = books.filter((n) => n.id === id)[0];
-
-  if (book !== undefined) {
-    return {
-      status: 'success',
-      data: {
-        book,
-      },
-    };
-  }
-  const response = h.response({
-    status: 'fail',
-    message: 'Buku tidak ditemukan',
-  });
-  response.code(404);
-  return response;
-};
-
-const UpdateNoteByIdHandler = (request, h) => {
-  const {id} = request.params;
-  const {name,
-    year,
-    author,
-    summary,
-    publisher,
-    pageCount,
-    readPage,
-    reading} = request.payload;
-
-  const updatedAt = new Date().toISOString();
-  const isFinished = (pageCount === readPage) ? true : false;
-
-  if (!name) {
-    const response = h.response({
-      status: 'fail',
-      message: 'Gagal memperbarui buku. Mohon isi nama buku',
-    });
-    response.code(400);
-    return response;
-  }
-  if (readPage > pageCount) {
-    const response = h.response({
-      status: 'fail',
-      // eslint-disable-next-line max-len
-      message: 'Gagal memperbarui buku. readPage tidak boleh lebih besar dari pageCount',
-    });
-    response.code(400);
-    return response;
-  }
-  const index = books.findIndex((book) => book.id === id);
-  if (index !== -1) {
-    books[index] = {
-      ...books[index],
-      name,
-      year,
-      author,
-      summary,
-      publisher,
-      pageCount,
-      readPage,
-      reading,
-      finished: isFinished,
-      updatedAt,
-    };
-    const response = h.response({
-      status: 'success',
-      message: 'Buku berhasil diperbarui',
-    });
-    response.code(200);
-    return response;
-  }
-
-  const response = h.response({
-    status: 'fail',
-    message: 'Gagal memperbarui buku. Id tidak ditemukan',
-  });
-  response.code(404);
-  return response;
-};
-
-const deleteBookByIdHandler = (request, h) => {
-  const {id} = request.params;
-  const index = books.findIndex((book) => book.id === id);
-
-  if (index !== -1) {
-    books.splice(index, 1);
-    const response = h.response({
-      status: 'success',
-      message: 'Buku berhasil dihapus',
-    });
-    response.code(200);
-    return response;
-  }
-
-  const response = h.response({
-    status: 'fail',
-    message: 'Buku gagal dihapus. Id tidak ditemukan',
-  });
-  response.code(404);
-  return response;
-};
-
-module.exports = {addBookHandler,
-  getAllBookdHandler,
-  getBookByIdHandler,
-  UpdateNoteByIdHandler,
-  deleteBookByIdHandler};
+module.exports = {addCalHandler};
 
